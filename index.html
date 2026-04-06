@@ -1,158 +1,104 @@
 <!DOCTYPE html>
-<html>
+<html lang="en"> <!-- changed language to English -->
 <head>
-    <title>Internet Monitor</title>
+    <title>Internet Monitor Dashboard</title>
     <meta charset="UTF-8">
-    <meta http-equiv="refresh" content="5"> <!-- تحديث تلقائي كل 5 ثواني -->
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            text-align: center;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            margin: 0;
-            padding: 20px;
-        }
-        
-        .container {
-            max-width: 600px;
-            margin: auto;
-            background: white;
-            border-radius: 20px;
-            padding: 30px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
-        }
-        
-        .status {
-            font-size: 48px;
-            margin: 20px 0;
-        }
-        
-        .online {
-            color: #4CAF50;
-        }
-        
-        .offline {
-            color: #f44336;
-        }
-        
-        .indicator {
-            width: 100px;
-            height: 100px;
-            border-radius: 50%;
-            margin: 20px auto;
-            animation: pulse 2s infinite;
-        }
-        
-        .indicator.online {
-            background: #4CAF50;
-            box-shadow: 0 0 20px #4CAF50;
-        }
-        
-        .indicator.offline {
-            background: #f44336;
-            box-shadow: 0 0 20px #f44336;
-        }
-        
-        @keyframes pulse {
-            0% { transform: scale(1); opacity: 1; }
-            50% { transform: scale(1.1); opacity: 0.7; }
-            100% { transform: scale(1); opacity: 1; }
-        }
-        
-        .data {
-            font-size: 24px;
-            margin: 20px 0;
-            padding: 10px;
-            background: #f5f5f5;
-            border-radius: 10px;
-        }
-        
-        button {
-            background: #667eea;
-            color: white;
-            border: none;
-            padding: 15px 30px;
-            border-radius: 10px;
-            font-size: 18px;
-            cursor: pointer;
-            margin-top: 20px;
-        }
-        
-        button:hover {
-            background: #764ba2;
-        }
-        
-        .timestamp {
-            color: #666;
-            font-size: 14px;
-            margin-top: 20px;
-        }
+        /* --- (حافظ على نفس التصميم الجميل الذي كتبته سابقًا) --- */
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; text-align: center; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); margin: 0; padding: 20px; }
+        .container { max-width: 600px; margin: auto; background: white; border-radius: 20px; padding: 30px; box-shadow: 0 10px 40px rgba(0,0,0,0.2); }
+        .status { font-size: 48px; margin: 20px 0; font-weight: bold; }
+        .online { color: #4CAF50; }
+        .offline { color: #f44336; }
+        .indicator { width: 100px; height: 100px; border-radius: 50%; margin: 20px auto; animation: pulse 2s infinite; }
+        .indicator.online { background: #4CAF50; box-shadow: 0 0 20px #4CAF50; }
+        .indicator.offline { background: #f44336; box-shadow: 0 0 20px #f44336; }
+        @keyframes pulse { 0% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.1); opacity: 0.7; } 100% { transform: scale(1); opacity: 1; } }
+        .data { font-size: 24px; margin: 20px 0; padding: 10px; background: #f5f5f5; border-radius: 10px; }
+        button { background: #667eea; color: white; border: none; padding: 15px 30px; border-radius: 10px; font-size: 18px; cursor: pointer; margin-top: 20px; transition: transform 0.2s; }
+        button:hover { background: #764ba2; transform: scale(1.02); }
+        .timestamp { color: #666; font-size: 14px; margin-top: 20px; }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>🌐 مراقبة حالة الإنترنت</h1>
+        <h1>🌐 Internet Connection Monitor</h1>
         
-        <div class="status" id="statusText">
-            جاري التحميل...
-        </div>
-        
+        <div class="status" id="statusText">Loading...</div>
         <div class="indicator" id="indicator"></div>
         
         <div class="data">
-            📊 آخر تحديث: <span id="timestamp">--</span>
+            📊 Last Update: <span id="timestamp">--:--:--</span>
         </div>
         
         <div class="data">
-            📱 عدد الرسائل: <span id="smsCount">0</span>
+            📱 SMS Alerts Sent: <span id="smsCount">0</span>
         </div>
         
-        <button onclick="refreshData()">
-            🔄 تحديث يدوي
+        <button onclick="fetchData()">
+            🔄 Refresh Now
         </button>
         
         <div class="timestamp">
-            يتم التحديث تلقائياً كل 5 ثواني
+            Auto-updates every 5 seconds
         </div>
     </div>
-    
+
     <script>
-        // استبدل هذا الرابط برابط خادمك
-        const API_URL = "http://YOUR_ESP_IP_ADDRESS/status";
-        
-        function updateStatus(data) {
+        // ⚠️ IMPORTANT: Replace this IP address with your ESP8266's IP address ⚠️
+        const ESP_IP = "http://192.168.1.100"; // <-- CHANGE THIS NUMBER!
+        const API_URL = `${ESP_IP}/status`;
+
+        async function fetchData() {
             const statusDiv = document.getElementById('statusText');
             const indicator = document.getElementById('indicator');
-            const timestamp = document.getElementById('timestamp');
+            const timestampSpan = document.getElementById('timestamp');
+            const smsCountSpan = document.getElementById('smsCount');
             
-            if (data.online === 1) {
-                statusDiv.innerHTML = '🟢 الإنترنت متصل';
-                statusDiv.className = 'status online';
-                indicator.className = 'indicator online';
-            } else {
-                statusDiv.innerHTML = '🔴 الإنترنت مقطوع';
+            // Show loading state
+            statusDiv.innerHTML = '🔄 Connecting to device...';
+            statusDiv.className = 'status';
+            
+            try {
+                // Send request to ESP8266
+                const response = await fetch(API_URL);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const data = await response.json(); // Parse the JSON response
+                console.log("Data received:", data); // See the data in browser console
+                
+                // Update the webpage based on the received data
+                if (data.internet === "online") {
+                    statusDiv.innerHTML = '🟢 INTERNET IS ONLINE';
+                    statusDiv.className = 'status online';
+                    indicator.className = 'indicator online';
+                } else {
+                    statusDiv.innerHTML = '🔴 INTERNET IS OFFLINE';
+                    statusDiv.className = 'status offline';
+                    indicator.className = 'indicator offline';
+                }
+                
+                // Update SMS count and timestamp
+                smsCountSpan.innerHTML = data.smsCount || 0;
+                timestampSpan.innerHTML = new Date().toLocaleTimeString();
+                
+            } catch (error) {
+                console.error('Error fetching data:', error);
+                statusDiv.innerHTML = '⚠️ CANNOT REACH DEVICE';
                 statusDiv.className = 'status offline';
                 indicator.className = 'indicator offline';
-            }
-            
-            timestamp.innerHTML = new Date().toLocaleString();
-            document.getElementById('smsCount').innerHTML = data.smsCount || 0;
-        }
-        
-        async function refreshData() {
-            try {
-                const response = await fetch(API_URL);
-                const data = await response.json();
-                updateStatus(data);
-            } catch (error) {
-                console.error('Error:', error);
-                document.getElementById('statusText').innerHTML = '❌ خطأ في الاتصال';
+                timestampSpan.innerHTML = 'Connection error';
             }
         }
         
-        // تحديث تلقائي
-        setInterval(refreshData, 5000);
-        refreshData();  // تحديث أولي
+        // Fetch data immediately when page loads
+        fetchData();
+        
+        // Then fetch data automatically every 5 seconds
+        setInterval(fetchData, 5000);
     </script>
 </body>
 </html>
